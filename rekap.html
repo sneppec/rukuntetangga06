@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rekap Pembayaran Rekreasi Pemuda</title>
+  <style>
+    :root{
+      --bg:#0b0c10; --card:#111218; --muted:#9aa3af; --text:#e5e7eb;
+      --accent:#6ee7b7; --accent-2:#60a5fa; --danger:#ef4444; --border:#1f2430; --sticky:#0f1117;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";background:linear-gradient(180deg,#0b0c10 0%,#0a0b0f 100%);color:var(--text)}
+    .wrap{max-width:1200px;margin:0 auto;padding:24px}
+    header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .title{display:flex;flex-direction:column;gap:6px}
+    h1{font-size:22px;margin:0;letter-spacing:.3px}
+    .subtitle{font-size:12px;color:var(--muted);display:flex;gap:12px;align-items:center}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    button,.input{height:36px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:0 12px;cursor:pointer;transition:transform .05s ease,box-shadow .2s ease}
+    button:hover{box-shadow:0 6px 18px rgba(0,0,0,.35)}
+    button:active{transform:translateY(1px)}
+    .btn-primary{border-color:#1f2937;background:linear-gradient(180deg,#151823,#0d1117)}
+    .btn-blue{border-color:#12325a;background:linear-gradient(180deg,#0f2541,#0b1b2f);color:#dbeafe}
+    .panel{border:1px solid var(--border);background:var(--card);border-radius:16px;overflow:hidden}
+    .controls{display:flex;gap:12px;align-items:center;padding:12px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)}
+    .controls .input{width:180px}
+    .table-wrap{overflow:auto}
+    table{border-collapse:separate;border-spacing:0;width:100%;min-width:900px}
+    thead th{position:sticky;top:0;background:var(--sticky);z-index:3;border-bottom:1px solid var(--border)}
+    th,td{padding:8px 10px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);white-space:nowrap;text-align:center;font-size:12px}
+    th{font-weight:600}
+    tbody tr:nth-child(odd){background:rgba(255,255,255,0.02)}
+    tbody tr:hover{background:rgba(255,255,255,0.04)}
+    .col-name{position:sticky;left:0;background:var(--sticky);z-index:2;text-align:left;min-width:180px}
+    .col-total{position:sticky;right:0;background:var(--sticky);z-index:2;min-width:120px}
+    .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+    .dot{width:8px;height:8px;border-radius:50%}
+    .footer{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;color:var(--muted);font-size:12px}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    dialog{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:16px;padding:0;max-width:420px}
+    .modal-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .modal-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;padding:14px 16px;border-top:1px solid var(--border)}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:12px;color:var(--muted)}
+    .field input,.field select{height:36px;border-radius:10px;border:1px solid var(--border);background:#0e1116;color:#e5e7eb;padding:0 10px}
+    .legend{display:flex;gap:12px;align-items:center}
+    .legend .pill{padding:4px 8px;border-radius:999px;border:1px solid var(--border);font-size:11px;color:var(--muted)}
+    
+    .toast{position:fixed;right:16px;bottom:16px;background:linear-gradient(180deg,#0f2f26,#0c231c);color:#d1fae5;border:1px solid #114534;padding:10px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .25s ease,transform .25s ease;font-size:13px;z-index:50}
+    .toast.show{opacity:1;transform:translateY(0)}
+    
+    .connection-status{ display:inline-flex; align-items:center; gap:6px; font-size:12px; }
+    .connection-status .dot{ width:8px; height:8px; border-radius:50%; transition:background-color .3s ease; }
+    .connection-status.connected .dot{ background:#22c55e; }
+    .connection-status.disconnected .dot{ background:#ef4444; }
+
+    
+    .login-modal {
+      min-width: 320px;
+      border-width: 2px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    .login-modal .modal-head {
+      background: var(--sticky);
+      padding: 20px;
+    }
+    .login-modal .modal-body {
+      padding: 24px;
+      gap: 16px;
+    }
+    .login-modal .field input {
+      font-size: 14px;
+      height: 40px;
+      background: var(--card);
+      border-color: var(--border);
+      transition: border-color 0.2s ease;
+    }
+    .login-modal .field input:focus {
+      outline: none;
+      border-color: var(--accent-2);
+    }
+    .login-modal .field label {
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .login-modal .btn-primary {
+      width: 100%;
+      height: 40px;
+      font-size: 14px;
+      font-weight: 500;
+      background: linear-gradient(180deg,#0f2541,#0b1b2f);
+      border-color: #12325a;
+      color: #dbeafe;
+    }
+    .login-error {
+      color: var(--danger);
+      font-size: 13px;
+      margin-top: -8px;
+    }
+
+  
+    .search-box {
+      position: relative;
+      flex: 1;
+      max-width: 300px;
+    }
+    .search-box input {
+      width: 100%;
+      padding-left: 32px;
+    }
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .search-box input:focus + .search-icon {
+      color: var(--accent-2);
+    }
+    tr.hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Rekap Pembayaran Rekreasi Pemuda</h1>
+        <div class="subtitle">
+          <span>Periode: <strong>24 Sep 2025</strong> – <strong>16 Sep 2026</strong></span>
+          <span class="connection-status disconnected">
+            <span class="dot"></span>
+            <span class="status-text">Offline</span>
+          </span>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button id="btnAdd" class="btn-blue" style="display:none">Tambahkan Peserta</button>
+        <button id="btnReset" class="btn-danger" style="display:none">Reset</button>
+        <button id="btnAuth" class="btn-primary">Login Admin</button>
+      </div>
+    </header>
+
+    <div class="panel">
+      <div class="controls">
+        <div class="search-box">
+          <input 
+            type="text" 
+            id="searchInput" 
+            class="input" 
+            placeholder="Cari nama peserta..." 
+            autocomplete="off"
+          />
+          <span class="search-icon">🔍</span>
+        </div>
+        <div class="badge" title="Jumlah peserta dan total pembayaran keseluruhan">
+          <span class="dot" style="background:var(--accent)"></span>
+          <span><span id="countPeserta">0</span> peserta</span>
+        </div>
+        <div class="badge">
+          <span class="dot" style="background:var(--accent-2)"></span>
+          <span>Total terkumpul: <strong id="sumAll">Rp0</strong></span>
+        </div>
+        <div class="legend" style="margin-left:auto">
+          <span class="pill">Nominal / pembayaran:</span>
+          <input id="nominal" class="input" type="text" value="Rp10.000" readonly style="text-align:right;cursor:not-allowed" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="table">
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      
+    </div>
+  </div>
+
+  
+  <dialog id="loginModal" class="login-modal">
+    <div class="modal-head">
+      <strong>Login Admin</strong>
+      <button id="closeLogin" class="btn-danger" aria-label="Tutup">✕</button>
+    </div>
+    <form method="dialog" id="loginForm">
+      <div class="modal-body">
+        <div class="field">
+          <label for="loginIdentifier">Email atau Username</label>
+          <input 
+            id="loginIdentifier" 
+            type="text" 
+            required 
+            placeholder="Masukkan email atau username" 
+            autocomplete="username"
+          />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" required placeholder="Masukkan password" autocomplete="current-password" />
+        </div>
+        <div id="loginError" class="login-error" style="display: none;"></div>
+        <button type="submit" class="btn-primary">Masuk sebagai Admin</button>
+      </div>
+    </form>
+  </dialog>
+
+  
+
+  
+  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-auth-compat.js"></script>
+  <script>
+    
+    const firebaseConfig = {
+            apiKey: "AIzaSyC63Y9hW7S9GoPfJrvwYVXIuzLO85J93UQ",
+            authDomain: "rt-06-c854f.firebaseapp.com",
+            databaseURL: "https://rt-06-c854f-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "rt-06-c854f",
+            storageBucket: "rt-06-c854f.firebasestorage.app",
+            messagingSenderId: "337211904633",
+            appId: "1:337211904633:web:e574354d9b8c134d9bfaa8",
+            measurementId: "G-GEGJC9V4RF"
+    };
+
+    
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const auth = firebase.auth();
+
+    let isAdmin = false;
+
+    
+    const connectedRef = database.ref('.info/connected');
+    const statusIndicator = document.querySelector('.connection-status');
+    const statusText = statusIndicator.querySelector('.status-text');
+
+    connectedRef.on('value', (snap) => {
+      if (snap.val() === true) {
+        statusIndicator.classList.remove('disconnected');
+        statusIndicator.classList.add('connected');
+        statusText.textContent = 'Online';
+      } else {
+        statusIndicator.classList.remove('connected');
+        statusIndicator.classList.add('disconnected');
+        statusText.textContent = 'Offline';
+      }
+    });
+
+    
+    auth.onAuthStateChanged((user) => {
+      isAdmin = !!user;
+      
+      const btnAuth = document.getElementById('btnAuth');
+      const btnAdd = document.getElementById('btnAdd');
+      const btnReset = document.getElementById('btnReset');
+      btnAuth.textContent = isAdmin ? 'Logout' : 'Login Admin';
+      btnAdd.style.display = isAdmin ? 'block' : 'none';
+      btnReset.style.display = isAdmin ? 'block' : 'none';
+      
+  renderBody();
+      
+      if (user) {
+        showToast('Login sebagai: ' + user.email);
+        
+        database.ref('admins/' + user.uid).once('value')
+          .then(snapshot => {
+            const userData = snapshot.val();
+            if (userData && userData.username) {
+              showToast('Selamat datang, ' + userData.username);
+            }
+          })
+          .catch(err => console.error('Error loading admin data:', err));
+      }
+    });
+
+    
+    const loginModal = document.getElementById('loginModal');
+    const loginForm = document.getElementById('loginForm');
+    const loginError = document.getElementById('loginError');
+    const closeLogin = document.getElementById('closeLogin');
+    
+    
+    async function checkFirstTimeSetup() {
+      try {
+        const adminsRef = database.ref('admins');
+        const snapshot = await adminsRef.once('value');
+        return !snapshot.exists(); 
+      } catch (err) {
+        console.error('Error checking admin setup:', err);
+        return false;
+      }
+    }
+    
+    
+    async function createFirstAdmin(email, username, password) {
+      try {
+        
+        const userCred = await auth.createUserWithEmailAndPassword(email, password);
+        const uid = userCred.user.uid;
+        
+      
+        await database.ref(`admins/${uid}`).set({
+          email,
+          username,
+          createdAt: Date.now(),
+          isFirstAdmin: true 
+        });
+        
+        return true;
+      } catch (err) {
+        console.error('Error creating first admin:', err);
+        throw err;
+      }
+    }
+    
+    document.getElementById('btnAuth').addEventListener('click', () => {
+      if (isAdmin) {
+        auth.signOut()
+          .then(() => showToast('Berhasil logout'))
+          .catch(err => showToast('Gagal logout: ' + err.message));
+        return;
+      }
+      
+      loginForm.reset();
+      loginError.style.display = 'none';
+      loginModal.showModal();
+    });
+
+    closeLogin.addEventListener('click', () => {
+      loginModal.close();
+    });
+
+    async function findEmailByUsername(username) {
+      try {
+        
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (retryCount < maxRetries) {
+          try {
+            const snapshot = await database.ref('admins')
+              .orderByChild('username')
+              .equalTo(username)
+              .once('value');
+              
+            if (!snapshot.exists()) {
+              throw new Error('username_not_found');
+            }
+            
+            const userData = snapshot.val();
+            const userRecord = Object.values(userData)[0];
+            
+            if (!userRecord || !userRecord.email) {
+              throw new Error('invalid_user_data');
+            }
+            
+            return userRecord.email;
+          } catch (innerError) {
+            if (innerError.code === 'PERMISSION_DENIED' && retryCount < maxRetries - 1) {
+             
+              await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+              retryCount++;
+              continue;
+            }
+            throw innerError;
+          }
+        }
+      } catch (error) {
+        console.error('Error finding email:', error);
+        if (error.code === 'PERMISSION_DENIED') {
+          throw new Error('network_error');
+        }
+        throw error;
+      }
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const identifier = document.getElementById('loginIdentifier').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      
+      
+      const isFirstSetup = await checkFirstTimeSetup();
+
+      if (!identifier || !password) {
+        loginError.textContent = 'Mohon isi semua field';
+        loginError.style.display = 'block';
+        return;
+      }
+
+      
+      const submitBtn = e.submitter;
+      const form = e.target;
+      const inputs = form.querySelectorAll('input');
+      
+      submitBtn.disabled = true;
+      inputs.forEach(input => input.disabled = true);
+      
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = 'Memproses...';
+      loginError.style.display = 'none';
+
+      try {
+        if (isFirstSetup) {
+          
+          if (!identifier.includes('@')) {
+            throw new Error('email_required');
+          }
+          
+          
+          if (password.length < 6) {
+            throw new Error('password_too_short');
+          }
+          
+          
+          await createFirstAdmin(identifier, identifier.split('@')[0], password);
+          loginModal.close();
+          toast('Admin pertama berhasil dibuat');
+          return;
+        }
+        
+        
+        let email = identifier;
+        
+        
+        if (!identifier.includes('@')) {
+          email = await findEmailByUsername(identifier);
+        }
+
+       
+        await auth.signInWithEmailAndPassword(email, password);
+        
+        
+        const adminSnapshot = await database.ref('admins').child(auth.currentUser.uid).once('value');
+        
+        if (!adminSnapshot.exists()) {
+          await auth.signOut();
+          throw new Error('not_admin');
+        }
+        
+        loginModal.close();
+        toast('Login berhasil');
+        
+      } catch (error) {
+        console.error('Login error:', error);
+        let errorMessage = 'Login gagal';
+        
+        switch(error.code || error.message) {
+          case 'auth/invalid-email':
+            errorMessage = 'Format email tidak valid';
+            break;
+          case 'email_required':
+            errorMessage = 'Email diperlukan untuk setup admin pertama';
+            break;
+          case 'password_too_short':
+            errorMessage = 'Password minimal 6 karakter';
+            break;
+          case 'auth/email-already-in-use':
+            errorMessage = 'Email sudah terdaftar';
+            break;
+          case 'auth/user-not-found':
+            errorMessage = 'Akun tidak ditemukan';
+            break;
+          case 'auth/wrong-password':
+            errorMessage = 'Password salah';
+            break;
+          case 'username_not_found':
+            errorMessage = 'Username tidak ditemukan';
+            break;
+          case 'network_error':
+            errorMessage = 'Gagal terhubung ke server';
+            break;
+          case 'not_admin':
+            errorMessage = 'Akun Anda tidak memiliki akses admin';
+            break;
+          case 'invalid_user_data':
+            errorMessage = 'Data user tidak valid';
+            break;
+        }
+        
+        loginError.textContent = errorMessage;
+        loginError.style.display = 'block';
+      } finally {
+        
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+        inputs.forEach(input => input.disabled = false);
+      }
+    });
+    
+    
+  </script>
+
+  
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    
+    const start = new Date(2025, 8, 24); 
+    const end = new Date(2026, 8, 16);   
+
+    const fmtKey = (d) => {
+      const t = new Date(d.getTime());
+      const tz = t.getTimezoneOffset();
+      const adj = new Date(t.getTime() - tz * 60000);
+      return adj.toISOString().slice(0, 10);
+    };
+    const fmtHeader = (d) => {
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mo = d.toLocaleString('id-ID',{month:'short'});
+      const yy = String(d.getFullYear()).slice(-2);
+      return `${dd} ${mo} ${yy}`;
+    };
+
+    function datesBetween(a,b){
+      const out=[]; const d=new Date(a);
+      while(d<=b){ out.push(new Date(d)); d.setDate(d.getDate()+1); }
+      return out;
+    }
+
+    const DATES = datesBetween(start,end);
+    const DATE_KEYS = DATES.map(fmtKey);
+
+    
+    const STORAGE_KEY = 'rekreasi_pemuda_toolbar_sederhana_v1';
+    const DB_ROOT = 'rekreasi_pemuda'; 
+    const FIXED_NOMINAL = 10000; // 
+
+    
+
+
+    async function loadData() {
+      
+      try {
+        const snap = await database.ref(DB_ROOT).once('value');
+        const rtdbData = snap.val();
+        if (rtdbData && rtdbData.participants) {
+          return {
+            participants: Object.keys(rtdbData.participants).map(id => ({
+              id,
+              name: rtdbData.participants[id].name,
+              pays: rtdbData.participants[id].pays || {}
+            })),
+            nominal: FIXED_NOMINAL
+          };
+        } else {
+          return { participants: [], nominal: FIXED_NOMINAL };
+        }
+      } catch (err) {
+        console.error('RTDB load error:', err);
+        showToast('Gagal memuat data dari Firebase');
+        return { participants: [], nominal: FIXED_NOMINAL };
+      }
+    }
+
+    async function saveData() {
+      
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          console.warn('Write prevented: unauthenticated');
+          showToast('Login sebagai admin diperlukan untuk menyimpan perubahan');
+          return;
+        }
+
+        const adminSnap = await database.ref(`admins/${user.uid}`).once('value');
+        if (!adminSnap.exists()) {
+          console.warn('Write prevented: user is not admin');
+          showToast('Akun Anda tidak memiliki izin untuk mengubah data');
+          return;
+        }
+
+        const { nominal, ...dataToSave } = state;
+       
+        const rtdbData = {};
+        dataToSave.participants.forEach(p => {
+          rtdbData[p.id] = {
+            name: p.name,
+            pays: p.pays || {}
+          };
+        });
+        
+        await database.ref(`${DB_ROOT}/participants`).set(rtdbData);
+      } catch (err) {
+        console.error('RTDB save error:', err);
+        showToast('Gagal menyimpan ke Firebase');
+      }
+    }
+
+    let state;
+
+    
+    function toast(msg){ showToast(msg); }
+
+    function renderHeader(){
+      const thead = document.getElementById('thead');
+      const tr = document.createElement('tr');
+      const thName = document.createElement('th'); thName.textContent='Nama'; thName.className='col-name'; tr.appendChild(thName);
+      for(const d of DATES){
+        const th=document.createElement('th'); th.textContent=fmtHeader(d); tr.appendChild(th);
+      }
+      const thTotal=document.createElement('th'); thTotal.textContent='Total (Rp)'; thTotal.className='col-total'; tr.appendChild(thTotal);
+      thead.innerHTML=''; thead.appendChild(tr);
+    }
+
+    
+    let toastTimer; function showToast(msg){ const t=document.getElementById('toast'); if(!t) return; t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2500); }
+
+    function countPays(p){ return Object.values(p.pays).filter(Boolean).length; }
+    function formatRupiah(n){ return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0).replace('IDR','Rp'); }
+
+    function renderBody(){
+      const tbody = document.getElementById('tbody');
+      tbody.innerHTML='';
+      let sumAll=0;
+      if (!state || !state.participants) return;
+      
+      const participantsSorted = (state.participants || []).slice().sort((a,b) => {
+        return (a.name || '').localeCompare(b.name || '', 'id');
+      });
+      for(const p of participantsSorted){
+        const tr=document.createElement('tr');
+        const tdName=document.createElement('td'); tdName.className='col-name'; tdName.textContent=p.name; tr.appendChild(tdName);
+        for(const key of DATE_KEYS){
+          const td=document.createElement('td');
+          const isPaid = !!(p.pays && p.pays[key]);
+          
+          if (isAdmin || isPaid) { 
+            const cb=document.createElement('input'); 
+            cb.type='checkbox'; 
+            cb.setAttribute('aria-label', `${p.name} ${key}`);
+            cb.checked = isPaid;
+            cb.disabled = !isAdmin;
+            cb.style.cursor = isAdmin ? 'pointer' : 'not-allowed';
+            
+            cb.addEventListener('change', ()=>{
+              if(!p.pays) p.pays={};
+              if(cb.checked){ 
+                p.pays[key] = {note:'', ts:Date.now()}; 
+                showToast(`Ditandai lunas: ${p.name} · ${key}`); 
+              } else { 
+                delete p.pays[key]; 
+                showToast(`Batal tandai: ${p.name} · ${key}`); 
+              }
+              recompute();
+            });
+            td.appendChild(cb);
+          } else {
+            
+            td.innerHTML = '&mdash;'; 
+            td.style.color = 'var(--muted)';
+          }
+          tr.appendChild(td);
+        }
+        const tdTotal=document.createElement('td'); 
+        tdTotal.className='col-total'; 
+        tdTotal.textContent=formatRupiah(countPays(p)*state.nominal); 
+        tr.appendChild(tdTotal);
+        tbody.appendChild(tr);
+        sumAll += countPays(p)*state.nominal;
+      }
+      document.getElementById('countPeserta').textContent = state.participants.length;
+      document.getElementById('sumAll').textContent = formatRupiah(sumAll);
+    }
+
+    function recompute(){ saveData(); renderBody(); }
+
+    
+    const btnAdd = document.getElementById('btnAdd');
+    if(btnAdd){
+      btnAdd.addEventListener('click', ()=>{
+        if(!isAdmin) return;
+        const name = prompt('Nama peserta baru:'); if(!name) return;
+        const id = 'p'+Math.random().toString(36).slice(2,8);
+        state.participants.push({id, name:name.trim(), pays:{}});
+        saveData(); renderBody(); showToast(`Peserta ditambahkan: ${name.trim()}`);
+      });
+    }
+
+    
+    window.addEventListener('keydown', (e)=>{
+      if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==='n'){
+        if(!isAdmin) return; e.preventDefault();
+        const name = prompt('Nama peserta baru:'); if(!name) return;
+        const id = 'p'+Math.random().toString(36).slice(2,8);
+        state.participants.push({id, name:name.trim(), pays:{}});
+        saveData(); renderBody(); showToast(`Peserta ditambahkan: ${name.trim()}`);
+      }
+    });
+
+    
+    const btnReset = document.getElementById('btnReset');
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        if (!isAdmin) return;
+        if (confirm('Hapus semua data? Tindakan ini tidak dapat dibatalkan.')) {
+          state = { participants: [], nominal: FIXED_NOMINAL };
+          saveData();
+          renderBody();
+          showToast('Seluruh data telah direset');
+        }
+      });
+    }
+
+    
+    let searchTimeout;
+    const searchInput = document.getElementById('searchInput');
+    
+    function performSearch() {
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      const rows = document.querySelectorAll('#tbody tr');
+      let visibleCount = 0;
+      
+      rows.forEach(row => {
+        const nameCell = row.querySelector('.col-name');
+        const name = nameCell.textContent.toLowerCase();
+        
+        if (name.includes(searchTerm)) {
+          row.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          row.classList.add('hidden');
+        }
+      });
+
+      
+      document.getElementById('countPeserta').textContent = visibleCount;
+      
+     
+      let sumAll = 0;
+      rows.forEach(row => {
+        if (!row.classList.contains('hidden')) {
+          const totalCell = row.querySelector('.col-total');
+          const total = parseInt(totalCell.textContent.replace(/[^\d]/g, '')) || 0;
+          sumAll += total;
+        }
+      });
+      document.getElementById('sumAll').textContent = formatRupiah(sumAll);
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performSearch, 300); 
+      });
+
+      
+      window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+          e.preventDefault();
+          searchInput.focus();
+        }
+      });
+    }
+
+    (async function init(){
+      state = await loadData();
+      renderHeader();
+      renderBody();
+    })();
+  </script>
+</body>
+</html>

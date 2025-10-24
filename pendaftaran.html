@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daftar Admin Rekap Pembayaran — RT-06</title>
+  <style>
+    :root{ --bg:#0b0c10; --card:#111218; --muted:#9aa3af; --text:#e5e7eb; --accent:#6ee7b7; --border:#1f2430; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";background:linear-gradient(180deg,#0b0c10 0%, #0a0b0f 100%);color:var(--text);display:grid;place-items:center;padding:24px}
+    .card{width:100%;max-width:520px;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.25);overflow:hidden}
+    .head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .head h1{font-size:18px;margin:0}
+    .body{padding:20px;display:flex;flex-direction:column;gap:14px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .label{font-size:12px;color:var(--muted)}
+    input[type="email"],input[type="text"],input[type="password"]{height:42px;border:1px solid var(--border);background:#0e1116;color:var(--text);border-radius:12px;padding:0 12px;outline:none}
+    input:focus{border-color:#263042;box-shadow:0 0 0 4px rgba(96,165,250,.12)}
+    .pw-wrap{position:relative}
+    .toggle-pw{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:1px solid var(--border);background:#0d1117;color:var(--text);height:28px;padding:0 10px;border-radius:999px;cursor:pointer;font-size:12px}
+    .strength{height:8px;border-radius:999px;background:#111824;border:1px solid var(--border);overflow:hidden}
+    .strength>div{height:100%;width:0%;background:linear-gradient(90deg,#ef4444,#f59e0b,#10b981);transition:width .25s ease}
+    .hint{font-size:12px;color:var(--muted)}
+    .actions{display:flex;gap:10px;margin-top:6px}
+    button{height:40px;border-radius:12px;border:1px solid var(--border);background:linear-gradient(180deg,#151823,#0d1117);color:var(--text);padding:0 14px;cursor:pointer}
+    button:hover{box-shadow:0 8px 24px rgba(0,0,0,.35)}
+    .btn-accent{border-color:#114534;background:linear-gradient(180deg,#0f2f26,#0c231c);color:#d1fae5}
+    .btn-ghost{background:transparent}
+    .toast{position:fixed;right:16px;bottom:16px;background:linear-gradient(180deg,#0f2f26,#0c231c);color:#d1fae5;border:1px solid #114534;padding:10px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .25s ease, transform .25s ease;font-size:13px;z-index:50}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .footer{padding:14px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+    .err{color:#fecaca}
+    .ok{color:#a7f3d0}
+  </style>
+</head>
+<body>
+  <div class="card" role="form" aria-labelledby="title">
+    <div class="head">
+      <h1 id="title">Daftar Admin Rekap</h1>
+      </div>
+  <div class="body">
+      <div class="field">
+        <label class="label" for="email">Email</label>
+        <input id="email" type="email" placeholder="nama@contoh.com" autocomplete="email" required />
+      </div>
+      <div class="field">
+        <label class="label" for="username">Username</label>
+        <input id="username" type="text" placeholder="mis. admin-rekap" autocomplete="username" required />
+      </div>
+      <div class="field pw-wrap">
+        <label class="label" for="password">Password</label>
+        <input id="password" type="password" placeholder="min. 8 karakter" autocomplete="new-password" required />
+        <button type="button" class="toggle-pw" aria-label="Tampilkan/sembunyikan password">Lihat</button>
+      </div>
+      <div class="strength" aria-hidden="true"><div id="bar"></div></div>
+      <div class="hint">Password harus memenuhi kriteria berikut:
+        • Minimal 8 karakter
+        • Mengandung huruf besar (A-Z)
+        • Mengandung huruf kecil (a-z)
+        • Mengandung angka (0-9)
+        • Mengandung simbol (!@#$%^&* dll)
+      </div>
+
+      <div class="actions">
+        <button id="submit" class="btn-accent">Daftarkan Admin</button>
+        <button id="clear" class="btn-ghost" type="button">Bersihkan</button>
+      </div>
+      <div id="foot" class="footer" aria-live="polite"></div>
+    </div>
+    </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-database-compat.js"></script>
+
+  <script>
+    // Firebase config — pakai milik RT-06 yang baru
+    const firebaseConfig = {
+      apiKey: "AIzaSyC63Y9hW7S9GoPfJrvwYVXIuzLO85J93UQ",
+      authDomain: "rt-06-c854f.firebaseapp.com",
+      databaseURL: "https://rt-06-c854f-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "rt-06-c854f",
+      storageBucket: "rt-06-c854f.firebasestorage.app",
+      messagingSenderId: "337211904633",
+      appId: "1:337211904633:web:e574354d9b8c134d9bfaa8",
+      measurementId: "G-GEGJC9V4RF"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+  </script>
+
+  <script>
+    const emailEl = document.getElementById('email');
+    const userEl = document.getElementById('username');
+    const passEl = document.getElementById('password');
+    const barEl = document.getElementById('bar');
+    const foot = document.getElementById('foot');
+
+    function showToast(msg, isError=false){
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.background = isError ? 'linear-gradient(180deg,#2a0e0e,#1d0a0a)' : 'linear-gradient(180deg,#0f2f26,#0c231c)';
+      t.style.borderColor = isError ? '#3a1111' : '#114534';
+      t.style.color = isError ? '#fecaca' : '#d1fae5';
+      t.classList.add('show');
+      setTimeout(()=> t.classList.remove('show'), 2500);
+    }
+
+    function checkStrength(pass){ let s=0; if(!pass) return s; if(pass.length>=8) s+=20; if(pass.length>=12) s+=10; if(/[0-9]/.test(pass)) s+=20; if(/[a-z]/.test(pass)) s+=20; if(/[A-Z]/.test(pass)) s+=20; if(/[^A-Za-z0-9]/.test(pass)) s+=10; return Math.min(100,s); }
+
+    document.querySelector('.toggle-pw').addEventListener('click', function(){ const type = passEl.type==='password'?'text':'password'; passEl.type=type; this.textContent = type==='password'?'Lihat':'Tutup'; });
+    passEl.addEventListener('input', function(){ barEl.style.width = checkStrength(this.value)+'%'; });
+
+    function validateEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+    function validateUsername(v){ return /^[a-z0-9_\-.]{3,32}$/i.test(v); }
+
+    async function checkFirstTimeSetup() {
+      try {
+        // Temporary anonymous auth untuk pengecekan admin pertama
+        await auth.signInAnonymously();
+        const adminsRef = database.ref('admins');
+        const snapshot = await adminsRef.once('value');
+        await auth.signOut(); // sign out anonymous user
+        return !snapshot.exists(); // true jika belum ada admin
+      } catch (err) {
+        console.error('Error checking admin setup:', err);
+        return false;
+      }
+    }
+
+    async function createAdmin(email, username, password){
+      try{
+        if(checkStrength(password) < 60){ 
+          showToast('Password terlalu lemah', true); 
+          if(foot) foot.innerHTML = '<span class="err">Password harus mengandung huruf besar, kecil, angka, dan minimal 8 karakter</span>';
+          return false; 
+        }
+
+        // Check if this is first admin
+        const isFirstSetup = await checkFirstTimeSetup();
+
+        // First create the authentication user
+        const cred = await auth.createUserWithEmailAndPassword(email, password);
+        const uid = cred.user.uid;
+
+        try {
+          // Then try to save the admin data
+          await database.ref('admins/'+uid).set({ 
+            username, 
+            email, 
+            createdAt: firebase.database.ServerValue.TIMESTAMP,
+            isFirstAdmin: isFirstSetup // penanda admin pertama
+          });
+        } catch (dbError) {
+          // If database write fails, delete the auth user to maintain consistency
+          await cred.user.delete();
+          throw new Error('Gagal menyimpan data admin. Pastikan aturan database diatur dengan benar.');
+        }
+
+        // Clear form only after successful registration
+        if(emailEl) emailEl.value = '';
+        if(userEl) userEl.value = '';
+        if(passEl) passEl.value = '';
+        if(barEl) barEl.style.width = '0%';
+        
+        // Update success message
+        const successMsg = 'Admin berhasil didaftarkan dengan UID: ' + uid;
+        if(foot) foot.innerHTML = '<span class="ok">' + successMsg + '</span>';
+        showToast('Admin berhasil didaftarkan!');
+        return true;
+      }catch(err){
+        console.error('Registration error:', err);
+        let msg = 'Gagal mendaftar';
+        
+        if (err.code) {
+          switch(err.code) {
+            case 'auth/email-already-in-use':
+              msg = 'Email ini sudah terdaftar sebagai admin. Gunakan email lain.';
+              break;
+            case 'auth/invalid-email':
+              msg = 'Format email tidak valid.';
+              break;
+            case 'auth/weak-password':
+              msg = 'Password terlalu lemah. Gunakan minimal 8 karakter dengan kombinasi huruf dan angka.';
+              break;
+            case 'auth/operation-not-allowed':
+              msg = 'Aktifkan Email/Password di Firebase Console → Authentication → Sign-in method';
+              break;
+            default:
+              if (/authorized domain/i.test(err.message)) {
+                msg = 'Tambahkan '+location.hostname+' ke Authorized domains di Firebase Console';
+              } else if (/permission[_-]denied/i.test(err.message)) {
+                msg = 'Akses ditolak. Pastikan aturan database diatur dengan benar';
+              } else if (err.message) {
+                msg = err.message;
+              }
+          }
+        }
+        
+        if(foot) foot.innerHTML = '<span class="err">' + msg + '</span>';
+        showToast(msg, true);
+        return false;
+      }
+    }
+
+    document.getElementById('submit').addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const email = emailEl.value.trim();
+      const username = userEl.value.trim();
+      const password = passEl.value;
+
+      let errs=[];
+      if(!validateEmail(email)) errs.push('Email tidak valid');
+      if(!validateUsername(username)) errs.push('Username minimal 3 karakter (huruf/angka/._-)');
+      if(password.length<8) errs.push('Password minimal 8 karakter');
+      if(errs.length){ foot.innerHTML='<span class="err">'+errs.join(' · ')+'</span>'; showToast('Periksa kembali input', true); return; }
+
+      const btn = e.currentTarget; const old=btn.textContent; btn.disabled=true; btn.textContent='Mendaftarkan...';
+      try{ await createAdmin(email, username, password); }
+      finally{ btn.disabled=false; btn.textContent=old; }
+    });
+
+    document.getElementById('clear').addEventListener('click', ()=>{ emailEl.value=''; userEl.value=''; passEl.value=''; barEl.style.width='0%'; showToast('Form dibersihkan'); });
+  </script>
+</body>
+</html>
