@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RT 06 — Home</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>Rukun Tetangga 06</h1>
+    <nav><a href="./pages/login.html">Login</a></nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Selamat datang</h2>
+      <p>Kerangka awal proyek sudah siap. Firebase SDK <strong>10.5 (modular)</strong> disiapkan melalui ESM dari CDN.</p>
+      <p>Status Auth: <span id="authStatus">memeriksa…</span></p>
+    </section>
+  </main>
+
+  <!-- Inisialisasi Firebase (Modular v10.5) -->
+  <script type="module">
+    import { getApps, getApp, initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+    import { getDatabase } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+    import { firebaseConfig } from "./js/firebase-config.js";
+
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    window._kk = { auth, db };
+
+    const statusEl = document.getElementById('authStatus');
+    onAuthStateChanged(auth, (user) => {
+      statusEl.textContent = user ? `login sebagai ${user.email}` : 'belum login';
+    });
+
+    // Muat script aplikasi utama (opsional)
+    import('./js/app.js').catch(console.error);
+  </script>
+</body>
+</html>
